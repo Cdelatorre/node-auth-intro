@@ -20,6 +20,10 @@ app.use(express.static("public"));
 const router = require("./config/routes.config");
 app.use("/", router);
 
+app.use((err, req, res, next) => {
+  res.send(JSON.stringify(err));
+});
+
 app.listen("3000", () => {
   console.log("Escuchando en el puerto 3000");
 });
