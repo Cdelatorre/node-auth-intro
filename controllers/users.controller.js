@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const mongoose = require("mongoose");
 
 module.exports.getUsers = (req, res, next) => {
   User.find()
@@ -14,6 +15,10 @@ module.exports.profile = (req, res, next) => {
   res.render("users/profile");
 };
 
+module.exports.unauthorized = (req, res, next) => {
+  res.render("users/unauthorized");
+};
+
 module.exports.register = (req, res, next) => {
   res.render("users/register");
 };
@@ -23,8 +28,6 @@ module.exports.login = (req, res, next) => {
 };
 
 module.exports.doLogin = (req, res, next) => {
-  console.log("BODY", req.body);
-
   const { email, password } = req.body;
 
   const renderWithErrors = () => {
@@ -44,7 +47,8 @@ module.exports.doLogin = (req, res, next) => {
       if (user) {
         return user.checkPassword(password).then((match) => {
           if (match) {
-            res.render("users/profile", { user });
+            req.session.userId = user.id;
+            res.redirect("/users/profile");
           } else {
             renderWithErrors();
           }
@@ -59,31 +63,32 @@ module.exports.doLogin = (req, res, next) => {
 };
 
 module.exports.doRegister = (req, res, next) => {
-  console.log(req.body);
+  const { email } = req.body; // carlos@carlos.com
 
-  User.create(req.body)
+  const renderWithErrors = (errors) => {
+    res.render("users/register", {
+      errors,
+      user: req.body,
+    });
+  };
+
+  User.findOne({ email })
     .then((user) => {
-      console.log("User created:", user);
-      res.redirect("/users");
+      if (!user) {
+        return User.create(req.body).then((user) => {
+          res.redirect("/users/login");
+        });
+      } else {
+        renderWithErrors({
+          email: "Email already in use",
+        });
+      }
     })
     .catch((err) => {
-      console.log(err);
-      res.render("users/register", { errors: err.errors, user: req.body });
+      if (err instanceof mongoose.Error.ValidationError) {
+        renderWithErrors(err.errors);
+      } else {
+        next(err);
+      }
     });
 };
-
-// err = {
-//   errors: {
-//     username:  'Username is required',
-//     email: 'Email is required',
-//     password: 'Password is required'
-//   },
-//   _message: 'User validation failed'
-// }
-
-// .then((users) => {
-//   res.render("users/list", { users: users }); // { users } is the same as { users: users }
-// })
-// .then((usersFromDb) => {
-//   res.render("users/list", { users: usersFromDb }); // { users } is not the same as { users: usersFromDb }
-// })
