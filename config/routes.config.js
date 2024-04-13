@@ -37,6 +37,11 @@ router.get(
   authMiddlewares.isAuthenticated,
   usersController.profile
 );
+router.get(
+  "/users/logout",
+  authMiddlewares.isAuthenticated,
+  usersController.logout
+);
 router.get("/users/unauthorized", usersController.unauthorized);
 
 module.exports = router;
