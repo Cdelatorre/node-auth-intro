@@ -35,12 +35,16 @@ module.exports.doLogin = (req, res, next) => {
     });
   };
 
+  if (!email || !password) {
+    renderWithErrors();
+  }
+
   User.findOne({ email: email })
     .then((user) => {
       if (user) {
         return user.checkPassword(password).then((match) => {
           if (match) {
-            res.redirect("/users/profile");
+            res.render("users/profile", { user });
           } else {
             renderWithErrors();
           }
